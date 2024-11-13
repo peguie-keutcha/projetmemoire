@@ -2,7 +2,7 @@
 FROM nginx:latest
 
 # Mettre à jour les paquets et installer git et nano
-RUN apt-get update && \
+#RUN apt-get update && \
     apt-get install -y git nano && \
     rm -rf /var/lib/apt/lists/*
 
