@@ -10,7 +10,7 @@ RUN apt-get update && \
 RUN rm -rf /usr/share/nginx/html
 RUN mkdir /usr/share/nginx/html
 # Cloner le dépôt Git dans le répertoire racine d'nginx
-RUN git clone https://github.com/firstruner/tinyshop_demo.git /usr/share/nginx/html
+RUN git clone https://github.com/peguie-keutcha/projetmemoire.git /usr/share/nginx/html
 
 # Exposer le port 80 pour le serveur nginx
 EXPOSE 80
