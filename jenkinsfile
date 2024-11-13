@@ -1,0 +1,112 @@
+pipeline {
+   agent { label 'agent-jenkins' }
+    environment {
+        IMAGE_NAME = "${PARAM_IMAGE_NAME}"                   /* Ex. alpinehelloworld */
+        APP_EXPOSED_PORT = "${PARAM_PORT_EXPOSED}"
+        IMAGE_TAG = "${PARAM_IMAGE_TAG}"                      /* Ex. latest */
+        STAGING = "${STAGING}"
+        PRODUCTION = "${PRODUCTION}"
+        DOCKERHUB_ID = "${PARAM_DOCKERHUB_ID}"
+        DOCKERHUB_PASSWORD = credentials('dockerhub')
+        INTERNAL_PORT = "${PARAM_INTERNAL_PORT}"              /* Par défaut : 5000 */
+        EXTERNAL_PORT = "${PARAM_PORT_EXPOSED}"
+        CONTAINER_IMAGE = "${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
+        IP = "${IP}"
+    }
+    stages {
+        stage('Build image') {
+           agent { label 'agent-jenkins' }  // Exécute la construction sur un nœud worker
+            steps {
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+       }
+
+       stage('Tag image') {
+           agent any
+            steps {
+                script {
+                    sh "docker image tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
+                }
+            }
+        } 
+       
+        stage('Run image') {
+           agent { label 'agent-jenkins' }
+            steps {
+                script {
+                    sh '''
+                        echo "Cleaning existing container if it exists"
+                        docker ps -a | grep -i $IMAGE_NAME && docker rm -f $IMAGE_NAME || true
+                        docker run --name $IMAGE_NAME -d -p $APP_EXPOSED_PORT:$INTERNAL_PORT -e PORT=$INTERNAL_PORT ${DOCKERHUB_ID}/$IMAGE_NAME:$IMAGE_TAG
+                        sleep 10
+                    '''
+                }
+            }
+        }
+
+        stage('Test image') {
+           agent { label 'agent-jenkins' }
+            steps {
+                script {
+                    sh '''
+                        curl -v $IP:$APP_EXPOSED_PORT | grep -q "Hello world!"
+                    '''
+                }
+            }
+        }
+
+
+        stage('Clean container') {
+           agent { label 'agent-jenkins' }
+            steps {
+                script {
+                    sh '''
+                        docker stop $IMAGE_NAME
+                        docker rm $IMAGE_NAME
+                    '''
+                }
+            }
+        }
+       
+        stage('Push image') {
+           agent { label 'agent-jenkins' }
+            steps {
+                script {
+                    sh '''
+                        echo $DOCKERHUB_PASSWORD_PSW | docker login -u $DOCKERHUB_PASSWORD_USR --password-stdin
+                        docker push ${DOCKERHUB_ID}/$IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+       
+
+        stage('Deploy to Staging') {
+           agent { label 'agent-jenkins' }
+            steps {
+                script {
+                    sh '''
+                        echo "Deploying to Staging environment"
+                        docker pull ${CONTAINER_IMAGE} && docker rm -f ${IMAGE_NAME} || true && docker run -d --name ${IMAGE_NAME} -p ${EXTERNAL_PORT}:${INTERNAL_PORT} ${CONTAINER_IMAGE}
+                    '''
+                }
+            }
+        }
+
+   
+        stage('Deploy to Production') {
+           agent { label 'agent-jenkins2' }
+            steps {
+                script {
+                    sh '''
+                        echo "Deploying to Production environment"
+                        docker pull ${CONTAINER_IMAGE} && docker rm -f ${IMAGE_NAME} || true && docker run -d --name ${IMAGE_NAME} -p ${EXTERNAL_PORT}:${INTERNAL_PORT} ${CONTAINER_IMAGE}
+                    '''
+                }
+            }
+        }
+    }
+}
