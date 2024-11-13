@@ -15,7 +15,6 @@ pipeline {
     }
     stages {
         stage('Build image') {
-           agent { label 'agent-jenkins' }  // Exécute la construction sur un nœud worker
             steps {
                 script {
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
@@ -24,7 +23,6 @@ pipeline {
        }
 
        stage('Tag image') {
-            agent { label 'agent-jenkins' }  // Exécute la construction sur un nœud worker
             steps {
                 script {
                     sh "docker image tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
@@ -33,7 +31,6 @@ pipeline {
         } 
        
         stage('Run image') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -47,7 +44,6 @@ pipeline {
         }
 
         stage('Test image') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -59,7 +55,6 @@ pipeline {
 
 
         stage('Clean container') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -71,7 +66,6 @@ pipeline {
         }
        
         stage('Push image') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -85,7 +79,6 @@ pipeline {
        
 
         stage('Deploy to Staging') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
