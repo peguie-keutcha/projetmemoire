@@ -12,7 +12,7 @@ pipeline {
         EXTERNAL_PORT = "${PARAM_PORT_EXPOSED}"
         CONTAINER_IMAGE = "${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
         IP = "${IP}"            /* ip de la machine de stagging */
-        IP1 = "{IP1}"       /* ip de la machine de prodution */
+        IP1 = "${IP1}"       /* ip de la machine de prodution */
     }
     stages {
         stage('Build image') {
