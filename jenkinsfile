@@ -11,7 +11,8 @@ pipeline {
         INTERNAL_PORT = "${PARAM_INTERNAL_PORT}"              /* Par défaut : 5000 */
         EXTERNAL_PORT = "${PARAM_PORT_EXPOSED}"
         CONTAINER_IMAGE = "${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
-        IP = "${IP}"
+        IP = "${IP}"            /* ip de la machine de stagging */
+        IP1 = "{IP1}"       /* ip de la machine de prodution */
     }
     stages {
         stage('Build image') {
@@ -97,7 +98,8 @@ pipeline {
                     sh '''
                         echo "Deploying to Production environment"
                         docker pull ${CONTAINER_IMAGE} && docker rm -f ${IMAGE_NAME} || true && docker run -d --name ${IMAGE_NAME} -p ${EXTERNAL_PORT}:${INTERNAL_PORT} ${CONTAINER_IMAGE}
-                    '''
+                        curl -v $IP1:$APP_EXPOSED_PORT 
+                    '''  
                 }
             }
         }
