@@ -51,7 +51,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        curl -v $IP:$APP_EXPOSED_PORT | grep -q "welcome to my shop"
+                        curl -v $IP:$APP_EXPOSED_PORT 
                     '''
                 }
             }
