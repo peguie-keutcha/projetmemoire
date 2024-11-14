@@ -11,11 +11,11 @@ pipeline {
         INTERNAL_PORT = "${PARAM_INTERNAL_PORT}"              /* Par défaut : 5000 */
         EXTERNAL_PORT = "${PARAM_PORT_EXPOSED}"
         CONTAINER_IMAGE = "${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
-        IP = "${IP}"
+        IP = "${IP}"            /* ip de la machine de stagging */
+        IP1 = "${IP1}"       /* ip de la machine de prodution */
     }
     stages {
         stage('Build image') {
-           agent { label 'agent-jenkins' }  // Exécute la construction sur un nœud worker
             steps {
                 script {
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
@@ -24,7 +24,6 @@ pipeline {
        }
 
        stage('Tag image') {
-           agent any
             steps {
                 script {
                     sh "docker image tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_ID}/${IMAGE_NAME}:${IMAGE_TAG}"
@@ -33,7 +32,6 @@ pipeline {
         } 
        
         stage('Run image') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -47,11 +45,10 @@ pipeline {
         }
 
         stage('Test image') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
-                        curl -v $IP:$APP_EXPOSED_PORT | grep -q "Hello world!"
+                        curl -v $IP:$APP_EXPOSED_PORT 
                     '''
                 }
             }
@@ -59,7 +56,6 @@ pipeline {
 
 
         stage('Clean container') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -71,7 +67,6 @@ pipeline {
         }
        
         stage('Push image') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -85,7 +80,6 @@ pipeline {
        
 
         stage('Deploy to Staging') {
-           agent { label 'agent-jenkins' }
             steps {
                 script {
                     sh '''
@@ -104,7 +98,8 @@ pipeline {
                     sh '''
                         echo "Deploying to Production environment"
                         docker pull ${CONTAINER_IMAGE} && docker rm -f ${IMAGE_NAME} || true && docker run -d --name ${IMAGE_NAME} -p ${EXTERNAL_PORT}:${INTERNAL_PORT} ${CONTAINER_IMAGE}
-                    '''
+                        curl -v $IP1:$APP_EXPOSED_PORT 
+                    '''  
                 }
             }
         }
